@@ -38,6 +38,9 @@
 @interface CDVInAppBrowser () {
     NSInteger _previousStatusBarStyle;
 }
+
+@property (nonatomic, assign) BOOL pageLoaded;
+
 @end
 
 @implementation CDVInAppBrowser
@@ -406,6 +409,11 @@
 - (BOOL)webView:(UIWebView*)theWebView shouldStartLoadWithRequest:(NSURLRequest*)request navigationType:(UIWebViewNavigationType)navigationType
 {
     NSURL* url = request.URL;
+
+    if ([url.absoluteString containsString:@"://"]) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"asd" object:url];
+    }
+
     BOOL isTopLevelNavigation = [request.URL isEqual:[request mainDocumentURL]];
 
     // See if the url uses the 'gap-iab' protocol. If so, the host should be the id of a callback to execute,
@@ -413,7 +421,7 @@
     if ([[url scheme] isEqualToString:@"gap-iab"]) {
         NSString* scriptCallbackId = [url host];
         CDVPluginResult* pluginResult = nil;
-
+//        NSLog(@"============url============url = %@",url);
         if ([self isValidCallbackId:scriptCallbackId]) {
             NSString* scriptResult = [url path];
             NSError* __autoreleasing error = nil;
@@ -436,11 +444,13 @@
     }
     //if is an app store link, let the system handle it, otherwise it fails to load it
     else if ([[ url scheme] isEqualToString:@"itms-appss"] || [[ url scheme] isEqualToString:@"itms-apps"]) {
+//        NSLog(@"=============load============== url = %@",url);
         [theWebView stopLoading];
         [self openInSystem:url];
         return NO;
     }
     else if ((self.callbackId != nil) && isTopLevelNavigation) {
+//        NSLog(@"=============loadstart============== url = %@",url);
         // Send a loadstart event for each top-level navigation (includes redirects).
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                                       messageAsDictionary:@{@"type":@"loadstart", @"url":[url absoluteString]}];
@@ -562,13 +572,14 @@
     self.webView.userInteractionEnabled = YES;
 
     self.spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    self.spinner.color = [UIColor blackColor];
     self.spinner.alpha = 1.000;
     self.spinner.autoresizesSubviews = YES;
     self.spinner.autoresizingMask = (UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin);
     self.spinner.clearsContextBeforeDrawing = NO;
     self.spinner.clipsToBounds = NO;
     self.spinner.contentMode = UIViewContentModeScaleToFill;
-    self.spinner.frame = CGRectMake(CGRectGetMidX(self.webView.frame), CGRectGetMidY(self.webView.frame), 20.0, 20.0);
+    self.spinner.frame = CGRectMake(CGRectGetMidX(self.webView.frame), CGRectGetMidY(self.webView.frame), 50.0, 50.0);
     self.spinner.hidden = NO;
     self.spinner.hidesWhenStopped = YES;
     self.spinner.multipleTouchEnabled = NO;
